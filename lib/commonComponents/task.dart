@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class TaskPage extends StatelessWidget {
-  TaskPage({@required this.title, this.description});
+  TaskPage({this.title, this.description});
 
   final title;
   final description;

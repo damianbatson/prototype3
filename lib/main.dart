@@ -1,10 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart' as auth;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:prototype3/models/user.dart';
 import 'package:prototype3/views/auth.dart';
 import 'package:prototype3/views/home_page.dart';
 import 'package:prototype3/views/login_page.dart';
-import 'package:prototype3/views/provider.dart';
+import 'package:provider/provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,14 +22,16 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   @override
-  void initState(){
+  void initState() {
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Provider(
-      auth: AuthService(),
+    return MultiProvider(
+      providers: [
+        Provider<AuthService>(create: (_) => AuthService()),
+      ],
       child: MaterialApp(
         title: 'Flutter login demo',
         theme: ThemeData(
@@ -40,20 +44,18 @@ class _MyAppState extends State<MyApp> {
 }
 
 class HomeController extends StatelessWidget {
-
   @override
   Widget build(BuildContext context) {
-    final AuthService auth = Provider.of(context).auth;
-    return StreamBuilder<String>(
-      stream: auth.onAuthStateChanged,
-      builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
-        if (snapshot.connectionState == ConnectionState.active) {
-          final bool isLoggedIn = snapshot.hasData;
-          return isLoggedIn ? HomePage() : LoginPage();
-        }
-        return _buildWaitingScreen();
-      }
-    );
+    final authService = Provider.of<AuthService>(context);
+    return StreamBuilder<User?>(
+        stream: authService.authStateChanges,
+        builder: (_, AsyncSnapshot<User?> snapshot) {
+          if (snapshot.connectionState == ConnectionState.active) {
+            final User? user = snapshot.data;
+            return user == null ? HomePage() : LoginPage();
+          }
+          return _buildWaitingScreen();
+        });
   }
 
   Widget _buildWaitingScreen() {

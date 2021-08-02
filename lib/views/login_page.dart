@@ -1,40 +1,51 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
+import 'package:prototype3/models/user.dart';
 import 'package:prototype3/views/auth.dart';
-import 'package:prototype3/views/provider.dart';
-
-class EmailFieldValidator {
-  static String validate(String value) {
-    return value.isEmpty ? 'Email can\'t be empty' : null;
-  }
-}
-
-class PasswordFieldValidator {
-  static String validate(String value) {
-    return value.isEmpty ? 'Password can\'t be empty' : null;
-  }
-}
-
-class LoginPage extends StatefulWidget {
-
-  @override
-  State<StatefulWidget> createState() => _LoginPageState();
-}
+import 'package:prototype3/views/home_page.dart';
+import 'package:provider/provider.dart';
 
 enum FormType {
   login,
   register,
 }
 
+class LoginPage extends StatefulWidget {
+  @override
+  State<StatefulWidget> createState() => _LoginPageState();
+}
+
+class EmailValidator {
+  static String? validate(String value) {
+    if (value.isEmpty) {
+      return "Email can't be empty";
+    }
+    return null;
+  }
+}
+
+class PasswordValidator {
+  static String? validate(String value) {
+    if (value.isEmpty) {
+      return "Password can't be empty";
+    }
+    return null;
+  }
+}
+
 class _LoginPageState extends State<LoginPage> {
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
 
-  String _email;
-  String _password;
+  late String _email;
+  late String _password;
+  final TextEditingController _emailController = new TextEditingController();
+  final TextEditingController _passwordController = new TextEditingController();
   FormType _formType = FormType.login;
 
   bool validateAndSave() {
-    final FormState form = formKey.currentState;
-    if (form.validate()) {
+    final FormState? form = formKey.currentState;
+    if (form!.validate()) {
       form.save();
       return true;
     }
@@ -44,12 +55,20 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> validateAndSubmit() async {
     if (validateAndSave()) {
       try {
-        final AuthService auth = Provider.of(context).auth;
+        final authService = Provider.of<AuthService>(context, listen: false);
         if (_formType == FormType.login) {
-          final String userId = await auth.signInWithEmailAndPassword(_email, _password);
+          final User? userId = await authService.signInWithEmailAndPassword(
+              _emailController.text, _passwordController.text);
           print('Signed in: $userId');
+          setState(() {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => HomePage()),
+            );
+          });
         } else {
-          final String userId = await auth.createUserWithEmailAndPassword(_email, _password);
+          final User? userId = await authService.createUserWithEmailAndPassword(
+              _emailController.text, _passwordController.text);
           print('Registered user: $userId');
         }
       } catch (e) {
@@ -59,14 +78,14 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void moveToRegister() {
-    formKey.currentState.reset();
+    formKey.currentState!.reset();
     setState(() {
       _formType = FormType.register;
     });
   }
 
   void moveToLogin() {
-    formKey.currentState.reset();
+    formKey.currentState!.reset();
     setState(() {
       _formType = FormType.login;
     });
@@ -96,15 +115,17 @@ class _LoginPageState extends State<LoginPage> {
       TextFormField(
         key: Key('email'),
         decoration: InputDecoration(labelText: 'Email'),
-        validator: EmailFieldValidator.validate,
-        onSaved: (String value) => _email = value,
+        controller: _emailController,
+        // validator: (value) => EmailValidator.validate(value!),
+        // onSaved: (String value) => _email = value,
       ),
       TextFormField(
         key: Key('password'),
         decoration: InputDecoration(labelText: 'Password'),
+        controller: _passwordController,
         obscureText: true,
-        validator: PasswordFieldValidator.validate,
-        onSaved: (String value) => _password = value,
+        // validator: (value) => PasswordValidator.validate(value!),
+        // onSaved: (String value) => _password = value,
       ),
     ];
   }
@@ -112,24 +133,25 @@ class _LoginPageState extends State<LoginPage> {
   List<Widget> buildSubmitButtons() {
     if (_formType == FormType.login) {
       return <Widget>[
-        RaisedButton(
+        ElevatedButton(
           key: Key('signIn'),
           child: Text('Login', style: TextStyle(fontSize: 20.0)),
           onPressed: validateAndSubmit,
         ),
-        FlatButton(
+        TextButton(
           child: Text('Create an account', style: TextStyle(fontSize: 20.0)),
           onPressed: moveToRegister,
         ),
       ];
     } else {
       return <Widget>[
-        RaisedButton(
+        ElevatedButton(
           child: Text('Create an account', style: TextStyle(fontSize: 20.0)),
           onPressed: validateAndSubmit,
         ),
-        FlatButton(
-          child: Text('Have an account? Login', style: TextStyle(fontSize: 20.0)),
+        TextButton(
+          child:
+              Text('Have an account? Login', style: TextStyle(fontSize: 20.0)),
           onPressed: moveToLogin,
         ),
       ];

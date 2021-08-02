@@ -7,10 +7,11 @@ import 'package:prototype3/views/auth.dart';
 import 'package:provider/provider.dart';
 import 'package:prototype3/models/user.dart';
 
-import '../commonComponents/detail_card.dart';
+import 'package:prototype3/commonComponents/custom_card.dart';
 
-class MyHomePage extends StatelessWidget {
-  const MyHomePage({required Key key, required this.title}) : super(key: key);
+class MyProfilePage extends StatelessWidget {
+  const MyProfilePage({required Key key, required this.title})
+      : super(key: key);
 
   final String title;
   static User? user;
@@ -46,13 +47,13 @@ class MyHomePage extends StatelessWidget {
                     // Access the fields as defined in FireStore
                     title: Text("${ds['itemid']} ${ds['description']}"),
                     // subtitle: Text("${ds['description']}"),
-                    trailing: Icon(Icons.home),
+                    trailing: Icon(Icons.verified),
                     contentPadding: EdgeInsets.all(5.0),
                     onTap: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => Detail(
+                          builder: (context) => CustomCard(
                             ds: ds,
                             description: '',
                             itemid: '',

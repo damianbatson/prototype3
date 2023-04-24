@@ -1,68 +1,67 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart' as auth;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:prototype3/models/user.dart';
-import 'package:prototype3/views/auth.dart';
-import 'package:prototype3/views/home_page.dart';
-import 'package:prototype3/views/login_page.dart';
-import 'package:provider/provider.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'firebase_options.dart';
+import 'state/authentication/providers/is_logged_in_provider.dart';
+import 'state/providers/is_loading_provider.dart';
+import 'views/components/loading/loading_screen.dart';
+import 'views/login/login_view.dart';
+import 'views/main/main_view.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
-  // FirebaseAdMob.instance.initialize(appId: AdMobService().getAdMobAppId());
-  runApp(MyApp());
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  runApp(
+    const ProviderScope(
+      child: App(),
+    ),
+  );
 }
 
-class MyApp extends StatefulWidget {
-  @override
-  _MyAppState createState() => _MyAppState();
-}
-
-class _MyAppState extends State<MyApp> {
-  @override
-  void initState() {
-    super.initState();
-  }
+class App extends ConsumerWidget {
+  const App({
+    Key? key,
+  }) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        Provider<AuthService>(create: (_) => AuthService()),
-      ],
-      child: MaterialApp(
-        title: 'Flutter login demo',
-        theme: ThemeData(
-          primarySwatch: Colors.blue,
-        ),
-        home: HomeController(),
+  Widget build(BuildContext context, WidgetRef ref) {
+    // calculate widget to show
+    return MaterialApp(
+      darkTheme: ThemeData(
+        brightness: Brightness.dark,
+        primarySwatch: Colors.blueGrey,
+        indicatorColor: Colors.blueGrey,
       ),
-    );
-  }
-}
-
-class HomeController extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final authService = Provider.of<AuthService>(context);
-    return StreamBuilder<User?>(
-        stream: authService.authStateChanges,
-        builder: (_, AsyncSnapshot<User?> snapshot) {
-          if (snapshot.connectionState == ConnectionState.active) {
-            final User? user = snapshot.data;
-            return user == null ? HomePage() : LoginPage();
+      theme: ThemeData(
+        brightness: Brightness.light,
+        primarySwatch: Colors.blue,
+      ),
+      themeMode: ThemeMode.dark,
+      debugShowCheckedModeBanner: false,
+      home: Consumer(
+        builder: (context, ref, child) {
+          // install the loading screen
+          ref.listen<bool>(
+            isLoadingProvider,
+            (_, isLoading) {
+              if (isLoading) {
+                LoadingScreen.instance().show(
+                  context: context,
+                );
+              } else {
+                LoadingScreen.instance().hide();
+              }
+            },
+          );
+          final isLoggedIn = ref.watch(isLoggedInProvider);
+          if (isLoggedIn) {
+            return const MainView();
+          } else {
+            return const LoginView();
           }
-          return _buildWaitingScreen();
-        });
-  }
-
-  Widget _buildWaitingScreen() {
-    return Scaffold(
-      body: Container(
-        alignment: Alignment.center,
-        child: CircularProgressIndicator(),
+        },
       ),
     );
   }
